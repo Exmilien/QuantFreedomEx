@@ -23,7 +23,9 @@ kaleido = [
 {version="0.2.1.post1", markers="sys_platform == 'darwin'", source = "pypi"},
 ]
 python-benedict=">=0.33.2"
-
+loguru = ">=0.7.2"
+web3 = ">=7.0.0b3"
+pydantic = ">=2.6.4"
 [tool.poetry.group.dev]
 optional = true
 
