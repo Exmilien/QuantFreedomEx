@@ -213,9 +213,9 @@ class BacktestSettings(NamedTuple):
     record_size: int = 10000
 
 
-class DynamicOrderSettingsArrays(NamedTuple):
-    max_trades: np.array
+class DynamicOrderSettings(NamedTuple):
     account_pct_risk_per_trade: np.array
+    max_trades: np.array
     risk_reward: np.array
     sl_based_on_add_pct: np.array
     sl_based_on_lookback: np.array
@@ -225,20 +225,6 @@ class DynamicOrderSettingsArrays(NamedTuple):
     trail_sl_bcb_type: np.array
     trail_sl_by_pct: np.array
     trail_sl_when_pct: np.array
-
-
-class DynamicOrderSettings(NamedTuple):
-    max_trades: int
-    account_pct_risk_per_trade: float
-    risk_reward: float
-    sl_based_on_add_pct: float
-    sl_based_on_lookback: int
-    sl_bcb_type: int
-    sl_to_be_cb_type: int
-    sl_to_be_when_pct: float
-    trail_sl_bcb_type: int
-    trail_sl_by_pct: float
-    trail_sl_when_pct: float
 
 
 class ExchangeSettings(NamedTuple):
@@ -292,7 +278,7 @@ class StaticOrderSettings(NamedTuple):
 class RejectedOrder(Exception):
     def __init__(
         self,
-        order_status: OrderStatus = None,
+        order_status: OrderStatus = None, # type: ignore
         msg: str = None,
     ):
         self.order_status = order_status
@@ -302,7 +288,7 @@ class RejectedOrder(Exception):
 class DecreasePosition(Exception):
     def __init__(
         self,
-        order_status: OrderStatus = None,
+        order_status: OrderStatus = None, # type: ignore
         exit_price: float = None,
         exit_fee_pct: float = None,
         msg: str = None,
@@ -316,7 +302,7 @@ class DecreasePosition(Exception):
 class MoveStopLoss(Exception):
     def __init__(
         self,
-        order_status: OrderStatus = None,
+        order_status: OrderStatus = None, # type: ignore
         sl_price: float = None,
         can_move_sl_to_be: bool = None,
         msg: str = None,
@@ -329,7 +315,7 @@ class MoveStopLoss(Exception):
 
 order_settings_array_dt = np.dtype(
     [
-        ("or_set_idx", np.int_),
+        ("set_idx", np.int_),
         ("increase_position_type", np.int_),
         ("leverage_type", np.int_),
         ("max_equity_risk_pct", np.float_),
@@ -358,8 +344,7 @@ order_settings_array_dt = np.dtype(
 
 or_dt = np.dtype(
     [
-        ("ind_set_idx", np.int_),
-        ("or_set_idx", np.int_),
+        ("set_idx", np.int_),
         ("bar_idx", np.int_),
         ("timestamp", np.int64),
         ("order_status", np.int_),
@@ -390,8 +375,7 @@ or_dt = np.dtype(
 
 strat_df_array_dt = np.dtype(
     [
-        ("ind_set_idx", np.int_),
-        ("dos_index", np.int_),
+        ("set_idx", np.int_),
         ("total_trades", np.float_),
         ("wins", np.int_),
         ("losses", np.int_),

@@ -1,14 +1,15 @@
+from collections import namedtuple
 from typing import NamedTuple
 import numpy as np
 import pandas as pd
 from logging import getLogger
 from datetime import datetime
-from quantfreedom.enums import AccountState, DynamicOrderSettings, DynamicOrderSettingsArrays, OrderResult
-from quantfreedom.exchanges.apex_exchange.apex import Apex
+from quantfreedom.enums import AccountState, DynamicOrderSettings, DynamicOrderSettings, OrderResult
 from quantfreedom.exchanges.binance_exchange.binance_us import BinanceUS
 from quantfreedom.exchanges.binance_exchange.binance_usdm import BinanceUSDM
 from quantfreedom.exchanges.bybit_exchange.bybit import Bybit
 from quantfreedom.exchanges.mufex_exchange.mufex import Mufex
+from quantfreedom.strategies.strategy import Strategy
 
 logger = getLogger("info")
 
@@ -30,8 +31,6 @@ def dl_ex_candles(
         binance us = 'binance_us' | default candles to dl is 1500
 
         binance futures = 'binance_usdm' | default candles to dl is 1500
-
-        apex = 'apex' | default candles to dl is 200
 
         mufex = 'mufex' | default candles to dl is 1500
 
@@ -68,14 +67,6 @@ def dl_ex_candles(
             until_datetime=until_datetime,
             candles_to_dl=1500 if candles_to_dl is None else candles_to_dl,
         )
-    elif exchange.lower() == "apex":
-        return Apex(use_test_net=False).get_candles(
-            symbol=symbol,
-            timeframe=timeframe,
-            since_datetime=since_datetime,
-            until_datetime=until_datetime,
-            candles_to_dl=200 if candles_to_dl is None else candles_to_dl,
-        )
     elif exchange.lower() == "mufex":
         return Mufex(use_test_net=False).get_candles(
             symbol=symbol,
@@ -93,7 +84,7 @@ def dl_ex_candles(
             candles_to_dl=1000 if candles_to_dl is None else candles_to_dl,
         )
     else:
-        raise Exception("You need to pick an exchange from this list apex, binance_usdm, mufex, binance_us, bybit")
+        raise Exception("You need to pick an exchange from this list binance_usdm, mufex, binance_us, bybit")
 
 
 def candles_to_df(
@@ -156,62 +147,21 @@ def get_qf_score(
 
 
 def get_dos(
-    dos_cart_arrays: DynamicOrderSettingsArrays,
+    dos_tuple: DynamicOrderSettings,
     dos_index: int,
 ):
     return DynamicOrderSettings(
-        max_trades=dos_cart_arrays.max_trades[dos_index],
-        account_pct_risk_per_trade=dos_cart_arrays.account_pct_risk_per_trade[dos_index],
-        risk_reward=dos_cart_arrays.risk_reward[dos_index],
-        sl_based_on_add_pct=dos_cart_arrays.sl_based_on_add_pct[dos_index],
-        sl_based_on_lookback=dos_cart_arrays.sl_based_on_lookback[dos_index],
-        sl_bcb_type=dos_cart_arrays.sl_bcb_type[dos_index],
-        sl_to_be_cb_type=dos_cart_arrays.sl_to_be_cb_type[dos_index],
-        sl_to_be_when_pct=dos_cart_arrays.sl_to_be_when_pct[dos_index],
-        trail_sl_bcb_type=dos_cart_arrays.trail_sl_bcb_type[dos_index],
-        trail_sl_by_pct=dos_cart_arrays.trail_sl_by_pct[dos_index],
-        trail_sl_when_pct=dos_cart_arrays.trail_sl_when_pct[dos_index],
-    )
-
-
-def cart_product(
-    named_tuple: NamedTuple,
-) -> np.array:
-    n = 1
-    for x in named_tuple:
-        n *= x.size
-    out = np.empty((n, len(named_tuple)))
-
-    for i in range(len(named_tuple)):
-        m = int(n / named_tuple[i].size)
-        out[:n, i] = np.repeat(named_tuple[i], m)
-        n //= named_tuple[i].size
-
-    n = named_tuple[-1].size
-    for k in range(len(named_tuple) - 2, -1, -1):
-        n *= named_tuple[k].size
-        m = int(n / named_tuple[k].size)
-        for j in range(1, named_tuple[k].size):
-            out[j * m : (j + 1) * m, k + 1 :] = out[0:m, k + 1 :]
-    return out.T
-
-
-def dos_cart_product(
-    dos_arrays: DynamicOrderSettingsArrays,
-) -> DynamicOrderSettingsArrays:
-    cart_arrays = cart_product(named_tuple=dos_arrays)
-    return DynamicOrderSettingsArrays(
-        max_trades=cart_arrays[0].astype(np.int_),
-        account_pct_risk_per_trade=cart_arrays[1] / 100,
-        risk_reward=cart_arrays[2],
-        sl_based_on_add_pct=cart_arrays[3] / 100,
-        sl_based_on_lookback=cart_arrays[4].astype(np.int_),
-        sl_bcb_type=cart_arrays[5].astype(np.int_),
-        sl_to_be_cb_type=cart_arrays[6].astype(np.int_),
-        sl_to_be_when_pct=cart_arrays[7] / 100,
-        trail_sl_bcb_type=cart_arrays[8].astype(np.int_),
-        trail_sl_by_pct=cart_arrays[9] / 100,
-        trail_sl_when_pct=cart_arrays[10] / 100,
+        max_trades=dos_tuple.max_trades[dos_index],
+        account_pct_risk_per_trade=dos_tuple.account_pct_risk_per_trade[dos_index],
+        risk_reward=dos_tuple.risk_reward[dos_index],
+        sl_based_on_add_pct=dos_tuple.sl_based_on_add_pct[dos_index],
+        sl_based_on_lookback=dos_tuple.sl_based_on_lookback[dos_index],
+        sl_bcb_type=dos_tuple.sl_bcb_type[dos_index],
+        sl_to_be_cb_type=dos_tuple.sl_to_be_cb_type[dos_index],
+        sl_to_be_when_pct=dos_tuple.sl_to_be_when_pct[dos_index],
+        trail_sl_bcb_type=dos_tuple.trail_sl_bcb_type[dos_index],
+        trail_sl_by_pct=dos_tuple.trail_sl_by_pct[dos_index],
+        trail_sl_when_pct=dos_tuple.trail_sl_when_pct[dos_index],
     )
 
 
@@ -261,7 +211,7 @@ def fill_order_records(
 
 def log_dynamic_order_settings(
     dos_index: int,
-    dynamic_order_settings: DynamicOrderSettingsArrays,
+    dynamic_order_settings: DynamicOrderSettings,
 ):
     logger.info(
         f"""

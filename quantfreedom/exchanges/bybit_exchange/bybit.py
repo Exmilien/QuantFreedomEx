@@ -306,7 +306,7 @@ class Bybit(Exchange):
         self,
         asset_size: float,
         symbol: str,
-        trigger_price: float,
+        sl_price: float,
     ):
         return self.create_order(
             symbol=symbol,
@@ -314,7 +314,7 @@ class Bybit(Exchange):
             buy_sell="Sell",
             order_type="Market",
             asset_size=asset_size,
-            triggerPrice=trigger_price,
+            triggerPrice=sl_price,
             reduce_only=True,
             triggerDirection=TriggerDirectionType.Fall,
             time_in_force="GTC",
@@ -322,7 +322,7 @@ class Bybit(Exchange):
 
     def get_position_info(
         self,
-        symbol: str,
+        symbol: str = None,
         baseCoin: str = None,
         category: str = "linear",
         limit: int = 50,
@@ -535,10 +535,9 @@ class Bybit(Exchange):
         response: dict = self.__HTTP_get_request(end_point=end_point, params=params)
         try:
             data_list = response["result"]["list"]
-            data_list[0]  # try this to see if anything is in here
             return data_list
         except Exception as e:
-            raise Exception(f"Bybit get_open_orders = Data or List is empty {response['retMsg']} -> {e}")
+            raise Exception(f"Bybit get_open_orders = {response['retMsg']} -> {e}")
 
     def check_if_order_open(
         self,
@@ -665,34 +664,6 @@ class Bybit(Exchange):
                 raise Exception
         except Exception as e:
             raise Exception(f"Bybit set_leverage_mode = Data or List is empty {response['retMsg']} -> {e}")
-
-    # def set_leverage_mode(
-    #     self,
-    #     symbol: str,
-    #     leverage_mode: int,
-    #     category: str = "linear",
-    #     leverage: int = 5,
-    # ):
-    #     """
-    #     https://bybit-exchange.github.io/docs/v5/position/cross-isolate
-    #     Cross/isolated mode. 0: cross margin mode; 1: isolated margin mode
-    #     """
-    #     end_point = "/v5/position/switch-isolated"
-    #     leverage_str = str(leverage)
-    #     params = {}
-    #     params["symbol"] = symbol
-    #     params["category"] = category
-    #     params["tradeMode"] = leverage_mode
-    #     params["buyLeverage"] = leverage_str
-    #     params["sellLeverage"] = leverage_str
-    #     response: dict = self.__HTTP_post_request(end_point=end_point, params=params)
-    #     try:
-    #         if response["retMsg"] in ["OK", "Cross/isolated margin mode is not modified"]:
-    #             return True
-    #         else:
-    #             raise Exception
-    #     except Exception as e:
-    #         raise Exception(f"Bybit set_leverage_mode = Data or List is empty {response['retMsg']} -> {e}")
 
     def adjust_order(
         self,
@@ -957,7 +928,7 @@ class Bybit(Exchange):
 
         return true_false
 
-    def set_and_get_exchange_settings(
+    def set_and_get_exchange_settings_tuple(
         self,
         leverage_mode: int,
         position_mode: int,
@@ -1008,3 +979,59 @@ class Bybit(Exchange):
             if not "_" in func_name[0]:
                 new_list.append(func[0])
         return new_list
+
+    def close_orders_and_hedge_positions(
+        self,
+        symbol: str = None,
+        settleCoin: str = None,
+    ):
+        """
+        Parameters
+        ----------
+        symbol : str
+        """
+
+        position_info = self.get_position_info(symbol=symbol, settleCoin=settleCoin)
+
+        order_type = "Market"
+
+        asset_size_0 = float(position_info[0]["size"])
+        # Return buy or sale based on pos side (if in a short, side == sell)
+        if asset_size_0 > 0:
+            position_mode = int(position_info[0]["positionIdx"])
+            buy_sell = "Sell" if position_mode == 1 else "Buy"
+            self.create_order(
+                symbol=symbol,
+                order_type=order_type,
+                asset_size=asset_size_0,
+                buy_sell=buy_sell,
+                position_mode=position_mode,
+            )
+
+        asset_size_1 = float(position_info[1]["size"])
+        if asset_size_1 > 0:
+            position_mode = int(position_info[1]["positionIdx"])
+            buy_sell = "Buy" if position_mode == 2 else "Sell"
+            self.create_order(
+                symbol=symbol,
+                order_type=order_type,
+                asset_size=asset_size_1,
+                buy_sell=buy_sell,
+                position_mode=position_mode,
+            )
+
+        self.cancel_all_open_orders_per_symbol(symbol=symbol)
+
+        sleep(1)
+
+        open_order_list = self.get_open_orders(symbol=symbol)
+
+        position_info = self.get_position_info(symbol=symbol)
+
+        asset_size_0 = float(position_info[0]["size"])
+        asset_size_1 = float(position_info[1]["size"])
+
+        if open_order_list or asset_size_0 > 0 or asset_size_1 > 0:
+            return False
+        else:
+            return True
