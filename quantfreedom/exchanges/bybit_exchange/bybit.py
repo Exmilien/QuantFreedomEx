@@ -980,7 +980,7 @@ class Bybit(Exchange):
                 new_list.append(func[0])
         return new_list
 
-    def close_orders_and_hedge_positions(
+    def close_hedge_positions_and_orders(
         self,
         symbol: str = None,
         settleCoin: str = None,
