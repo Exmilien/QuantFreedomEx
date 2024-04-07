@@ -7,23 +7,26 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.13"
-dash = "2.9.1"
-dash-bootstrap-templates = "1.1.1"
-ipykernel = "6.25.0"
-ipywidgets = "8.1.1"
-jupyter-dash = "0.4.2"
-notebook = "6.5.6"
-numba = "0.58.1"
-numpy = "1.26.1"
-pandas = "2.1.1"
-plotly = "5.17.0"
-tables = "3.9.2"
+dash = ">=2.9.1"
+dash-bootstrap-templates = ">=1.1.1"
+ipykernel = ">=6.29.4"
+ipywidgets = ">=8.1.1"
+jupyter-dash = ">=0.4.2"
+notebook = ">=6.5.6"
+numpy = ">=1.26.1"
+numba = ">=0.58.1"
+pandas = ">=2.1.1"
+plotly = ">=5.17.0"
+tables = ">=3.9.2"
 kaleido = [
 {version="0.1.0.post1", markers="sys_platform == 'win32'", source = "pypi"},
 {version="0.2.1", markers="sys_platform == 'darwin'", source = "pypi"},
-{version="0.2.1", markers="sys_platform == 'linux'", source = "pypi"},
+{version="0.2.1", markers="sys_platform == 'linux'", source = "pypi"}
 ]
-
+python-benedict=">=0.33.2"
+loguru = ">=0.7.2"
+web3 = ">=7.0.0b3"
+pydantic = ">=2.6.4"
 
 aiogram = { version = "3.4.1", optional = true }
 asgiref = { version = "3.8.1", optional = true }
@@ -47,7 +50,6 @@ mkdocstrings = { version = "0.24.0", optional = true }
 mkdocs-gen-files = { version = "0.5.0", optional = true }
 mkdocs-material = { version = "9.4.14", optional = true }
 mkdocs-open-in-new-tab = { version = "1.0.3", optional = true }
-
 
 [tool.poetry.extras]
 dev = ["mysql-connector-python", "aws-cdk-lib", "constructs", "fastapi", "mangum", "httpx", "cryptography", "discord-py", "pyjwt", "aiogram", "email-validator", "uvicorn", "pyyaml", "discord-interactions", "asgiref"]
